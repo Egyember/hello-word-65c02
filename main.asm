@@ -6,6 +6,7 @@ DDRA = $6003
 E  = %10000000
 RW = %01000000
 RS = %00100000
+DISPLAYMASK =  %11100000
 
 SETMODE   = %00111000
 DISPLAYON = %00001111
@@ -21,13 +22,13 @@ reset:
 	sta DDRA ;set output mode on PORTA
 	jsr lcdinit
 
-
-
 main:
+	jsr lcdClear
 	ldx #$0
 loop$
 	lda data,x
-	bne end$
+	cmp #'\0'
+	beq end$
 	jsr senddata
 	jsr waitBusy
 	inx
@@ -49,42 +50,59 @@ endif$
 :	jmp :-
 
 sendinst:
+	pha
+	phx
 	sta PORTB
-	lda #0
+	lda PORTA
+	and #^DISPLAYMASK
+	tax
+	stx PORTA
+	ora #E
 	sta PORTA
-	lda #E
-	sta PORTA
-	lda #0
-	sta PORTA
+	stx PORTA
+	plx
+	pla
 	rts
 
 senddata:
+	pha
+	phx
 	sta PORTB
-	lda #RS
+	lda PORTA
+	and #^DISPLAYMASK
+	ora #RS
+	tax
 	sta PORTA
-	lda #(E | RS)
+	ora #E
 	sta PORTA
-	lda #RS
+	txa
 	sta PORTA
+	plx
+	pla
 	rts
 
 waitBusy:
 	pha
+	phx
 	lda #%00000000  ; Port B is input
 	sta DDRB
+	lda PORTA
+	and #^DISPLAYMASK
+	ora #RW
+	tax ;storeing the non tick state of port a in x
 lcdbusy:
-	lda #RW
-	sta PORTA
-	lda #(RW | E)
+	stx PORTA
+	txa  ;looping can make a other data so this is necessary
+	ora #E
 	sta PORTA
 	lda PORTB
 	and #%10000000
-	bne lcdbusy
+	bne lcdbusy ;loop until busy bit not set
 	
-	lda #RW
-	sta PORTA
+	stx PORTA 
 	lda #%11111111  ; Port B is output
 	sta DDRB
+	plx
 	pla
 	rts
 
@@ -119,8 +137,14 @@ lcdinit:
 
 	pla
 	rts
-print:
 
+lcdClear:
+	pha
+	lda #CLEAR ; Clear display
+	jsr sendinst
+	jsr waitBusy
+	pla
+	rts
 
 sleep:
 	sbc #1
@@ -143,7 +167,7 @@ irq:
 	rti ;if interrupt happen return from it
 
 data:
-	.ascii "hello\n"
+	.ascii "2025_01_09\0"
 vactors:
 	.org $fffc
 	.word reset ;reset vector

@@ -10,4 +10,4 @@ dump:
 	minipro -p AT28C256 -r $(BINARY)
 
 $(BINARY): main.asm
-	$(ASM)  main.asm -Fbin -dotdir -o $(BINARY) 
+	$(ASM)  main.asm -Fbin -c02 -esc -dotdir -o $(BINARY) 
