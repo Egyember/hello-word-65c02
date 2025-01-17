@@ -2,6 +2,9 @@ PORTB = $6000
 PORTA = $6001
 DDRB = $6002
 DDRA = $6003
+VIAIRQ = $600E
+VIAAUX = $600B
+VIACONT = $600C
 
 E  = %10000000
 RW = %01000000
@@ -20,6 +23,13 @@ reset:
 	sta DDRB ;set output mode on PORTB
 	lda #$ff 
 	sta DDRA ;set output mode on PORTA
+	lda #%11001100
+	sta VIACONT ;set controll reg
+	lda #%00000000
+	sta VIAAUX ;set aux controll reg
+	lda #%10000000
+	sta VIAIRQ ;disable all irq
+	cli
 	jsr lcdinit
 
 main:
