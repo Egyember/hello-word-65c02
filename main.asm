@@ -2,9 +2,11 @@ PORTB = $6000
 PORTA = $6001
 DDRB = $6002
 DDRA = $6003
-VIAIRQ = $600E
+VIASFC = $600A
 VIAAUX = $600B
 VIACONT = $600C
+IRQFLAG = $600D
+VIAIRQ = $600E
 
 E  = %10000000
 RW = %01000000
@@ -27,7 +29,7 @@ reset:
 	sta VIACONT ;set controll reg
 	lda #%00000000
 	sta VIAAUX ;set aux controll reg
-	lda #%10000000
+	lda #%10010000
 	sta VIAIRQ ;disable all irq
 	cli
 	jsr lcdinit
@@ -36,7 +38,7 @@ main:
 	jsr lcdClear
 	ldx #$0
 loop$
-	lda data,x
+	lda kezdo,x
 	cmp #'\0'
 	beq end$
 	jsr senddata
@@ -174,10 +176,41 @@ longsleep:
 	
 
 irq:
+	pha
+	phx
+	lda IRQFLAG
+	tax			;store a in x so I can check other bits
+	and #%00010000
+	cmp #%00010000
+	beq write$
+
+	jmp end$
+
+write$
+	lda #%00010000
+	sta IRQFLAG
+	jsr lcdClear
+	ldx #$0
+loop$
+	lda gomb,x
+	cmp #'\0'
+	beq irq
+	jsr senddata
+	jsr waitBusy
+	inx
+	jmp loop$
+end$
+	plx
+	pla
 	rti ;if interrupt happen return from it
 
-data:
+kezdo:
 	.ascii "2025_01_09\0"
+gomb:
+	.ascii "gomb\0"
+megingomb:
+	.ascii "megint gomb\0"
+
 vactors:
 	.org $fffc
 	.word reset ;reset vector
