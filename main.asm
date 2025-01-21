@@ -3,6 +3,7 @@ PORTA = $6001
 DDRB = $6002
 DDRA = $6003
 VIAT2L = $6008
+VIAT2H = $6009
 VIASFC = $600A
 VIAAUX = $600B
 VIACONT = $600C
@@ -33,7 +34,7 @@ reset:
 	sta VIACONT ;set controll reg
 	lda #%00000000
 	sta VIAAUX ;set aux controll reg
-	lda #%10001000
+	lda #%10101100
 	sta VIAIRQ ;disable all unused irq
 	jsr lcdinit
 	jsr lcdClear
@@ -202,28 +203,33 @@ endirq$
 	rti ;if interrupt happen return from it
 
 resetT2$
-	lda #'b'
-	jsr senddata
-	jsr waitBusy
 	lda t2counter
 	cmp #0
 	beq endt2$
 	sbc #1
 	sta t2counter
+	lda #'b'
+	jsr senddata
+	jsr waitBusy
+	
 	lda VIAT2L
 	adc #104 ;close enugh for 1MHz 104,166666667 is the accutate for 1MHz
 	sta VIAT2L
+	lda #0
+	sta VIAT2H
 	jmp endt2$
 
 uartstart$
 	lda #%10100100
-	sta VIAIRQ ;enable shift register, t2 irq and disable falling edge irq
+	sta VIAIRQ ;disable falling edge irq
 	lda #%00001000 ;clear irq
 	sta IRQFLAG
 	lda #8
 	sta t2counter
 	lda #104 ;close enugh for 1MHz 104,166666667 is the accutate for 1MHz
 	sta VIAT2L
+	lda #0
+	sta VIAT2H
 	lda #%00000100 ;Shift in under control of T2
 	sta VIAAUX
 	jmp enduartst$
@@ -232,7 +238,7 @@ uartstart$
 uartdone$
 	lda #%00000100
 	sta IRQFLAG ;clear irq
-	lda #%10001000
+	lda #%10101100
 	sta VIAIRQ ;reset setings irq
 	lda VIASFC
 	lda #'a'
@@ -245,7 +251,7 @@ uartdone$
 
 
 kezdo:
-	.ascii "2025_01_09\0"
+	.ascii "ok\0"
 gomb:
 	.ascii "gomb\0"
 megingomb:
